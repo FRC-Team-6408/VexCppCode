@@ -23,8 +23,8 @@ void shootTarget( int targetHeight ) {
 
     // Calculate the initial velocity.
     // Also, this equation is split into multiple parts so it is easy to read.
-    double top = (FG_VANCOUVER/2) * pow((dx*cos(ANGLE)), 2.0);
-    double bot = dy - ( dx*cos(ANGLE) / sin(ANGLE) );
+    double top = (FG_VANCOUVER/2) * pow(dx, 2.0);
+    double bot = pow(cos(ANGLE), 2.0) * ( dy - (dx*sin(ANGLE) / cos(ANGLE)) );
     double vi = sqrt( top / bot );
 
     // Convert to flywheel percent.
@@ -45,46 +45,7 @@ void pre_auton( void ) {
 }
 
 // The auto function.  Called once.
-void autonomous( void ) {
-    DriveL.rotateFor(1.3, rotationUnits::rev, false); //move forward
-    DriveR.rotateFor(1.3, rotationUnits::rev);
-    vex::task::sleep(1000);
-    DriveL.rotateFor(0.6, rotationUnits::rev, false); //turn 90 degrees
-    DriveR.rotateFor(-0.6, rotationUnits::rev);
-    vex::task::sleep(1000);
-    DriveL.rotateFor(3.1, rotationUnits::rev, false); //moves forward and turns on the barrel (flip cap)
-    Barrel.spin(directionType::fwd, 100, velocityUnits::pct);
-    DriveR.rotateFor(3.1, rotationUnits::rev);
-    vex::task::sleep(1000);
-    Barrel.spin(directionType::fwd, 0, velocityUnits::pct); //turns 90 degrees and turns off the barrel
-    DriveL.rotateFor(0.3,rotationUnits::rev, false);
-    DriveR.rotateFor(-0.3,rotationUnits::rev);
-    vex::task::sleep(1000);
-    DriveL.rotateFor(3.9,rotationUnits::rev, false); //go fwd
-    DriveR.rotateFor(3.9,rotationUnits::rev);
-    vex::task::sleep(1000);
-    DriveL.rotateFor(0.3,rotationUnits::rev, false); //turn 90 degrees
-    DriveR.rotateFor(-0.3,rotationUnits::rev);
-    vex::task::sleep(1000);
-    DriveL.rotateFor(2.4,rotationUnits::rev, false); //go forward hit flag
-    DriveR.rotateFor(-2.4,rotationUnits::rev);
-    vex::task::sleep(1000);
-    DriveL.rotateFor(-3.4,rotationUnits::rev, false); //back up
-    DriveR.rotateFor(-3.4,rotationUnits::rev);
-    vex::task::sleep(1000);
-    DriveL.rotateFor(0.3,rotationUnits::rev, false); //turn 90 degrees
-    DriveR.rotateFor(-0.3,rotationUnits::rev);
-    vex::task::sleep(1000);
-    DriveL.rotateFor(3.2,rotationUnits::rev, false); //go backwards
-    DriveR.rotateFor(3.2,rotationUnits::rev);
-    vex::task::sleep(1000);
-    DriveL.rotateFor(0.3,rotationUnits::rev, false); //turn 90 degrees
-    DriveR.rotateFor(-0.3,rotationUnits::rev);
-    vex::task::sleep(1000);
-    DriveL.rotateFor(1.4,rotationUnits::rev, false); //attempt to back onto platform but fail miserably
-    DriveR.rotateFor(1.4,rotationUnits::rev);
-    vex::task::sleep(1000);
-}
+void autonomous( void ) { }
 
 // Some tiny director functions.
 void HitTop (void) { shootTarget(TOP_TARGET); }
@@ -126,6 +87,7 @@ void usercontrol( void ) {
         vex::task::sleep(POLL_SPEED);
     }
 }
+
 
 // Main will set up the competition functions and callbacks.
 int main() {
