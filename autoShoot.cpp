@@ -1,18 +1,15 @@
 #include "robot-config.h"
 
-//Creates a competition object that allows access to Competition methods.
-//vex::competition    Competition; // FOR SOME REASON IT IS GETTING ANGRY AT THIS LINE AND I DONT KNOW WHY.
-
 const int POLL_SPEED = 1000/50;  // 50 iterations per second.
 
 const int TOP_TARGET = 44;  // height = 44in.
 const int MID_TARGET = 30;  // height = 30in.
-const double SPEED_MOD = 0.5;  // smaller means less power.
-const double ANGLE = 30;  // the angle of the projectile's initial velocity. (angle is not 30.)
+const double SPEED_MOD = 0.5;  // Smaller means less power.  //TODO: change this value.
+const double ANGLE = -1;  // The angle of the projectile's initial velocity. (angle is not 30.)
 const double SONAR_FLYWHEEL_DIST = 0;  // Distance from point the ball stops touching the flywheel to the front of the sonar sensor.
-const double FG_VANCOUVER = -9.83249;  // Change this number when no longer in vancouver.  // Use standard value?
+const double FG_VANCOUVER = -387.1059055; // Change this number when no longer in vancouver.  // Use standard value?
 
-// This function uses physics 12 math to calculate the initial velocity of the ball.
+// This function uses Physics 12 math to calculate the initial velocity of the ball.
 // The variable "SPEED_MOD" is used to convert in/s to flywheel speed.
 void shootTarget( int targetHeight ) {
     Brain.Screen.print("shootTarget ~ start");
@@ -23,26 +20,29 @@ void shootTarget( int targetHeight ) {
 
     // Calculate the initial velocity.
     // Also, this equation is split into multiple parts so it is easy to read.
-    double top = (FG_VANCOUVER/2) * pow(dx, 2.0);
+    double top = (FG_VANCOUVER/2) * (dx*dx);
     double bot = pow(cos(ANGLE), 2.0) * ( dy - (dx*sin(ANGLE) / cos(ANGLE)) );
     double vi = sqrt( top / bot );
 
     // Convert to flywheel percent.
     double percentSpeed = vi*SPEED_MOD;
 
-    // Rotate motor for 0.25s.
+    // Start rotating flywheel
     Flywheel.spin(directionType::fwd, percentSpeed, velocityUnits::pct);
-    vex::task::sleep(250);
+    vex::task::sleep(500);
 
-    // Stop flywheel.
+    // Intake ball
+    Barrel.spin(directionType::fwd, 100, velocityUnits::pct);
+    vex::task::sleep(500);  /* "Ball is shot!" */
+
+    // Stop flywheel & Barrel.
+    Barrel.spin(directionType::fwd, 0, velocityUnits::pct);
     Flywheel.spin(directionType::fwd, 0, velocityUnits::pct);
 
     Brain.Screen.print("shootTarget ~ end");
 }
 
-void pre_auton( void ) {
-    // Calculations?
-}
+void pre_auton( void ) { }
 
 // The auto function.  Called once.
 void autonomous( void ) { }
@@ -87,7 +87,6 @@ void usercontrol( void ) {
         vex::task::sleep(POLL_SPEED);
     }
 }
-
 
 // Main will set up the competition functions and callbacks.
 int main() {
