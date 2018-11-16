@@ -4,8 +4,8 @@ const int POLL_SPEED = 1000/50;  // 50 iterations per second.
 
 const int TOP_TARGET = 44;  // height = 44in.
 const int MID_TARGET = 30;  // height = 30in.
-const double SPEED_MOD = 0.5;  // Smaller means less power.  //TODO: change this value.
-const double ANGLE = -1;  // The angle of the projectile's initial velocity. (angle is not 30.)
+const double SPEED_MOD = null;  // Smaller means less power.  //TODO: change this value.
+const double ANGLE = null;  // The angle of the projectile's initial velocity. (angle is not 30.)
 const double SONAR_FLYWHEEL_DIST = 0;  // Distance from point the ball stops touching the flywheel to the front of the sonar sensor.
 const double FG_VANCOUVER = -387.1059055; // Change this number when no longer in vancouver.  // Use standard value?
 

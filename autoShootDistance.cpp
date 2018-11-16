@@ -4,10 +4,10 @@ const int POLL_SPEED = 1000/50;  // 50 iterations per second.
 
 const int TOP_TARGET = 44;  // height = 44in.
 const int MID_TARGET = 30;  // height = 30in.
-const double ANGLE = 30;  // the angle of the projectile's initial velocity. (angle is not 30.)
+const double ANGLE = null;  // the angle of the projectile's initial velocity. (angle is not 30.)
 const double SONAR_FLYWHEEL_DIST = 0;  // Distance from point the ball stops touching the flywheel to the front of the sonar sensor.
-const double FG_VANCOUVER = -9.83249;  // Change this number when no longer in vancouver.  // Use standard value?
-const double VI = 10;  // in in/s (speed is not 10in/s)
+const double FG_VANCOUVER = -387.1059055;  // Change this number when no longer in vancouver.  // Use standard value?
+const double VI = null;  // in in/s (speed is not 10in/s)
 
 // This function uses physics 12 math to calculate the needed distance from the wall.
 // The variable "VI" is the calculated speed of the ball.
