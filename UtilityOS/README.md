@@ -1,0 +1,9 @@
+## Utility OS
+
+This is a utility program for interacting with the v5 brain.
+
+Some (planned) features are:
+    - Interacting with motors.
+    - Creating autonomous codes and saving them to the sd card. (using a self-created markdown language)
+    - Viewing & editing SD card files manually.
+    - Viewing the vision sensor & editing signatures.
