@@ -3,6 +3,7 @@ typedef signed int int32_t;typedef unsigned int uint32_t;typedef unsigned char u
 #include "robot-config.h"
 #include <string>  // holy shit i can include stuff.
 #include <cmath>
+#include <algorithm>
 
 typedef std::string string;  // This makes the string class easier to use.
 
@@ -89,7 +90,7 @@ void initialize( void ) {
     Brain.Screen.setCursor(BRAIN_ROW_COUNT, 1);
     Brain.Screen.print("Press the (A) button or touch the screen to continue...");
 
-    exitLoop();
+    pause();
 }
 
 void motorSettings ( void ) { }
@@ -145,14 +146,14 @@ public:
     }
 
     // Draw this item to the brain.
-    void Draw() {
+    void Draw(int xcursor, int ycursor) {
         // Find position based on index.
         int xloc = GetX()*GetItemSize() + (GetX()+1)*BRAIN_ITEM_PADDING;
         int yloc = GetY()*GetItemSize() + (GetY()+1)*BRAIN_ITEM_PADDING;
         int size = GetItemSize();
 
         // Draw border rectangle at needed thickness & color, case: if selected.
-        if (xindex == GetX() && yindex == GetY()) {
+        if (xcursor == GetX() && ycursor == GetY()) {
             Brain.Screen.setPenWidth(BOLD_PEN_WIDTH);
             Brain.Screen.drawRectangle(xloc, yloc,  size, size, vex::color::yellow);
             Brain.Screen.setPenWidth(STD_PEN_WIDTH);
@@ -164,14 +165,14 @@ public:
         //                         the 20 in mono20 refers to 20px in height.
 
         // Determine how many lines should be drawn for the title.
-        int titleLen = m_title.length;
+        int titleLen = m_title.length();
         if (titleLen*FONT_WIDTH < GetItemSize()) {  // case: draw a single line.
-            Brain.Screen.printAt(xloc, yloc, m_title);
+            Brain.Screen.printAt(xloc, yloc, m_title.c_str());
         } else {  // case: draw each word in a new line.
-            string* titlePtr;
+            string* titlePtr = NULL;
             int arrSize = splitString(m_title, titlePtr);
             for(int i=0; i<arrSize; i++) {
-                Brain.Screen.printAt(xloc, yloc+(FONT_HEIGHT+1)*i, titlePtr[i]);
+                Brain.Screen.printAt(xloc, yloc+(FONT_HEIGHT+1)*i, titlePtr[i].c_str());
             }
 
             delete[] titlePtr;  // titlePtr must be deleted because new was used.
@@ -249,13 +250,13 @@ void menu ( void ) {
             requestNewFrame = false;
             Brain.Screen.clearScreen(vex::color::white);
 
-            SystemReport.Draw();
-            MotorSettings.Draw();
-            ThermalInformation.Draw();
-            SDCardViewer.Draw();
-            VisionViewer.Draw();
-            EditAutoCode.Draw();
-            DrawGif.Draw();
+            SystemReport.Draw(xindex, yindex);
+            MotorSettings.Draw(xindex, yindex);
+            ThermalInformation.Draw(xindex, yindex);
+            SDCardViewer.Draw(xindex, yindex);
+            VisionViewer.Draw(xindex, yindex);
+            EditAutoCode.Draw(xindex, yindex);
+            DrawGif.Draw(xindex, yindex);
         }
 
         vex::task::sleep(STD_WAIT);
