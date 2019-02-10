@@ -1,7 +1,4 @@
 # Vex C++ code
+This is the repository for team 6408s' code.
 
-This is just some vex c++ code snippets.
-
-autoShoot.vex contains a function that is meant to test hitting the targets using the rangefinder.
-
-autoShoot.cpp is the text version.
+See ```\util-programs``` for the gif to V5-Brain code.
