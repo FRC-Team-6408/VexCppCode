@@ -14,8 +14,36 @@ const int BRAIN_ITEM_PADDING = 8;  // in px
 const int STD_HZ = 50;
 const int STD_WAIT = 1000/STD_HZ;  // This is 20ms
 
+const int STD_PEN_WIDTH = 8;
+const int BOLD_PEN_WIDTH = 16;
+
+// Check this.
+const int FONT_HEIGHT = 20;  // in px
+const int FONT_WIDTH = 10;  // in px
+
 // absolute value
 double abs(double n) { if (n < 0.0) { return -n; } else { return n; } }
+
+// returns a the amount of elements split.  Splits a string into multiples.
+// REMEMBER TO DELETE sOut after using it.
+int splitString(string s, string* strOut) {
+    string delimiter = " ";
+
+    int size = std::count(s.begin(), s.end(), ' ');
+    strOut = new string[size];
+
+    int index=0;
+    size_t pos = 0;
+    string token;
+    while ((pos = s.find(delimiter)) != std::string::npos) {
+        token = s.substr(0, pos);
+        strOut[index] = token;  // Assign token to array element.
+        s.erase(0, pos + delimiter.length());
+        index++;
+    }
+
+    return size;
+}
 
 // This loop waits for the controller or screen to be pressed before exiting.
 // A small dot animation plays to show user brain is not crashed.
@@ -90,9 +118,13 @@ void visionViewer ( void ) {
 void autoWriter ( void ) {
 }
 
-void drawGif( void ) { }
+void drawGif( void ) {
+    //  loop:
+    //      string str = "thing" + number +"i.png";
+    //      Brain.Screen.drawImageFromFile(str, xpos, ypos);
+}
 
-int gRowSize = 2;  // This is how many items can be in one row.
+int gRowSize = 3;  // This is how many items can be in one row.
 
 // The Button Item class contains the information for the each different screen item / action.
 // (i.e. test motors, system report, etc...)
@@ -112,13 +144,44 @@ public:
         this->m_id = _idGenerator;
     }
 
+    // Draw this item to the brain.
+    void Draw() {
+        // Find position based on index.
+        int xloc = GetX()*GetItemSize() + (GetX()+1)*BRAIN_ITEM_PADDING;
+        int yloc = GetY()*GetItemSize() + (GetY()+1)*BRAIN_ITEM_PADDING;
+        int size = GetItemSize();
+
+        // Draw border rectangle at needed thickness & color, case: if selected.
+        if (xindex == GetX() && yindex == GetY()) {
+            Brain.Screen.setPenWidth(BOLD_PEN_WIDTH);
+            Brain.Screen.drawRectangle(xloc, yloc,  size, size, vex::color::yellow);
+            Brain.Screen.setPenWidth(STD_PEN_WIDTH);
+        } else {
+            Brain.Screen.drawRectangle(xloc, yloc,  size, size, vex::color::black);
+        }
+
+        // TODO: VERIFY THIS FACT: monospaced characters are 1/2 the width of the height of a char.
+        //                         the 20 in mono20 refers to 20px in height.
+
+        // Determine how many lines should be drawn for the title.
+        int titleLen = m_title.length;
+        if (titleLen*FONT_WIDTH < GetItemSize()) {  // case: draw a single line.
+            Brain.Screen.printAt(xloc, yloc, m_title);
+        } else {  // case: draw each word in a new line.
+            string* titlePtr;
+            int arrSize = splitString(m_title, titlePtr);
+            for(int i=0; i<arrSize; i++) {
+                Brain.Screen.printAt(xloc, yloc+(FONT_HEIGHT+1)*i, titlePtr[i]);
+            }
+
+            delete[] titlePtr;  // titlePtr must be deleted because new was used.
+        }
+
+    }
+
     // Get drawing index.
     int GetX() { return m_id%gRowSize; }
     int GetY() { return std::floor(m_id/gRowSize); }
-    void Draw() {
-        //todo: THIS
-        Brain.Screen.drawRectangle(GetX(), GetY(), GetItemSize(), GetItemSize(), vex::color::black);
-    }
 
     static int GetItemSize() {
         int verticalItems = (gRowSize <= 1) ? 1 : std::floor(gRowSize/2);
@@ -137,44 +200,55 @@ ButtonItem VisionViewer = ButtonItem("Vision Sensor Viewer", visionViewer);
 ButtonItem EditAutoCode = ButtonItem("Edit Autonomous Code", autoWriter);
 ButtonItem DrawGif = ButtonItem("Show Logo", drawGif);
 
-// This function starts the menu.  This is the main loop of the program.
+// menu variables.
 int xindex = 0; int yindex = 0;  // This is the coords of the cursor.
 bool requestNewFrame = true;
 
+// This function has all the menu controll checking.
 bool upToggle;  bool downToggle;
+void menuControl( void ) {
+    if (Controller.ButtonUp.pressing()) {
+        if(!upToggle) {
+            upToggle = true;
+            {  // Action when button is first pressed:
+                yindex--;
+                if (yindex < 0) {yindex = 0;}
+                requestNewFrame = true;
+            }
+        }
+    } else if(!Controller.ButtonUp.pressing() && upToggle) {
+        upToggle = false;
+    }
+
+    if (Controller.ButtonDown.pressing()) {
+        if(!downToggle) {
+            downToggle = true;
+            {  // Action when button is first pressed:
+                yindex++;
+                if (yindex > ButtonItem::getMaxYIndex()) {yindex = ButtonItem::getMaxYIndex();}
+                requestNewFrame = true;
+            }
+        }
+    } else if(!Controller.ButtonUp.pressing() && downToggle) {
+        downToggle = false;
+    }
+
+}
+
+// This function starts the menu.  This is the main loop of the program.
 void menu ( void ) {
+    Brain.Screen.setPenColor(vex::color::black);  // Make all text black in the menu.
+
     // Whenever a change is made and a new frame is requested
     bool exit = false;
     while(!exit) {
-        if (Controller.ButtonUp.pressing()) {
-            if(!upToggle) {
-                upToggle = true;
-                {  // Action when button is first pressed:
-                    yindex--;
-                    if (yindex < 0) {yindex = 0;}
-                    requestNewFrame = true;
-                }
-            }
-        } else if(!Controller.ButtonUp.pressing() && upToggle) {
-            upToggle = false;
-        }
+        menuControl();  // Check for movement.
 
-        if (Controller.ButtonDown.pressing()) {
-            if(!downToggle) {
-                downToggle = true;
-                {  // Action when button is first pressed:
-                    yindex++;
-                    if (yindex > ButtonItem::getMaxYIndex()) {yindex = ButtonItem::getMaxYIndex();}
-                    requestNewFrame = true;
-                }
-            }
-        } else if(!Controller.ButtonUp.pressing() && downToggle) {
-            downToggle = false;
-        }
-
+        // Redraw the screen when the "cursor" is moved.
         if (requestNewFrame) {
             requestNewFrame = false;
             Brain.Screen.clearScreen(vex::color::white);
+
             SystemReport.Draw();
             MotorSettings.Draw();
             ThermalInformation.Draw();
@@ -188,9 +262,15 @@ void menu ( void ) {
     }
 }
 
-
+void setup() {
+    // This is the initial font used everywhere in the program.
+    Brain.Screen.setFont(vex::fontType::mono20);
+    Brain.Screen.setPenWidth(STD_PEN_WIDTH);
+}
 
 int main() {
+    setup();  // This function sets constants & stuff.  Do not call this again.
+
     initialize();  // Check the status of the brain and connections.
     menu();  // Enter menu after status check;
 
