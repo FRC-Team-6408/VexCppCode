@@ -15,26 +15,11 @@ const int STD_WAIT = 1000/STD_HZ;  // This is 20ms
 // absolute value
 double abs(double n) { if (n < 0.0) { return -n; } else { return n; } }
 
-// This does some basic systems reporting to the brain.
-void initialize( void ) {
-    Brain.Screen.print("########  Systems Report:  ########");
-    Brain.Screen.newLine();
-
-    bool sdCardStatus = Brain.SDcard.isInserted();
-    Brain.Screen.print("sdcard inserted = %i", sdCardStatus);
-    Brain.Screen.newLine();
-
-    vex::devices dev;  // This is a local variable
-    Brain.Screen.print("devices connected = %i", dev.number());
-    Brain.Screen.newLine();
-
-    Brain.Screen.setCursor(BRAIN_ROW_COUNT, 1);
-    Brain.Screen.print("Press the (A) button or touch the screen to continue...");
-
+// This loop waits for the controller or screen to be pressed before exiting.
+// A small dot animation plays to show user brain is not crashed.
+void pause() {
     int ticks = 0;
     bool exit = false;
-    // This loop waits for the controller or screen to be pressed before exiting.
-    // A small dot animation plays to show user brain is not crashed.
     while(!exit) {
         if(Controller.ButtonA.pressing() || Brain.Screen.pressing()) {
             exit = true;
@@ -57,22 +42,50 @@ void initialize( void ) {
     }
 }
 
+// This does some basic systems reporting to the brain.
+void initialize( void ) {
+    Brain.Screen.setCursor(1, 1);
+    Brain.Screen.print("########  Systems Report:  ########");
+    Brain.Screen.newLine();
+
+    bool sdCardStatus = Brain.SDcard.isInserted();
+    Brain.Screen.print("sdcard inserted = %i", sdCardStatus);
+    Brain.Screen.newLine();
+
+    vex::devices dev;  // This is a local variable
+    Brain.Screen.print("devices connected = %i", dev.number());
+    Brain.Screen.newLine();
+
+    Brain.Screen.setCursor(BRAIN_ROW_COUNT, 1);
+    Brain.Screen.print("Press the (A) button or touch the screen to continue...");
+
+    exitLoop();
+}
+
 void motorSettings ( void ) { }
 
 void thermalInfo ( void ) {
-
 }
 
+// Give user command line access to the sd card.
 void sdReader ( void ) {
+    // First give a blurb saying if there even is an sd card.
+    Brain.Screen.clearScreen(vex::color::black);
+    Brain.Screen.setCursor(1, 1);
 
+    bool sdCardStatus = Brain.SDcard.isInserted();
+    Brain.Screen.print("sdcard inserted = %i", sdCardStatus);
+    Brain.Screen.newLine();
+
+    pause();
+    if (!sdCardStatus) { return; }  // If no sd card, exit.
+    // TODO: let user iteract with files etc...
 }
 
 void visionViewer ( void ) {
-
 }
 
 void autoWriter ( void ) {
-
 }
 
 void drawGif( void ) { }
@@ -134,21 +147,27 @@ void menu ( void ) {
         if (Controller.ButtonUp.pressing()) {
             if(!upToggle) {
                 upToggle = true;
-                yindex--;
-                if (yindex < 0) {yindex = 0;}
+                {  // Action when button is first pressed:
+                    yindex--;
+                    if (yindex < 0) {yindex = 0;}
+                    requestNewFrame = true;
+                }
             }
-        } else if(!Controller.ButtonUp.pressing()) {
+        } else if(!Controller.ButtonUp.pressing() && upToggle) {
             upToggle = false;
         }
 
         if (Controller.ButtonDown.pressing()) {
-            if(!upToggle) {
-                upToggle = true;
-                yindex++;
-                if (yindex > ButtonItem::getMaxYIndex()) {yindex = ButtonItem::getMaxYIndex();}
+            if(!downToggle) {
+                downToggle = true;
+                {  // Action when button is first pressed:
+                    yindex++;
+                    if (yindex > ButtonItem::getMaxYIndex()) {yindex = ButtonItem::getMaxYIndex();}
+                    requestNewFrame = true;
+                }
             }
-        } else if(!Controller.ButtonUp.pressing()) {
-            upToggle = false;
+        } else if(!Controller.ButtonUp.pressing() && downToggle) {
+            downToggle = false;
         }
 
         if (requestNewFrame) {
