@@ -18,9 +18,12 @@ const int STD_WAIT = 1000/STD_HZ;  // This is 20ms
 const int STD_PEN_WIDTH = 8;
 const int BOLD_PEN_WIDTH = 16;
 
-// Check this.
+// TODO: Make sure these numbers are right.
 const int FONT_HEIGHT = 20;  // in px
 const int FONT_WIDTH = 10;  // in px
+
+// Global Variables
+bool gRequestNewFrame = true;
 
 // absolute value
 double abs(double n) { if (n < 0.0) { return -n; } else { return n; } }
@@ -49,6 +52,9 @@ int splitString(string s, string* strOut) {
 // This loop waits for the controller or screen to be pressed before exiting.
 // A small dot animation plays to show user brain is not crashed.
 void pause() {
+    Brain.Screen.setCursor(BRAIN_ROW_COUNT, 1);
+    Brain.Screen.print("Press the (A) button or touch the screen to continue...");
+
     int ticks = 0;
     bool exit = false;
     while(!exit) {
@@ -75,7 +81,9 @@ void pause() {
 
 // This does some basic systems reporting to the brain.
 void initialize( void ) {
+    Brain.Screen.clearScreen(vex::color::black);
     Brain.Screen.setCursor(1, 1);
+
     Brain.Screen.print("########  Systems Report:  ########");
     Brain.Screen.newLine();
 
@@ -83,19 +91,30 @@ void initialize( void ) {
     Brain.Screen.print("sdcard inserted = %i", sdCardStatus);
     Brain.Screen.newLine();
 
-    vex::devices dev;  // This is a local variable
-    Brain.Screen.print("devices connected = %i", dev.number());
+    vex::devices devs;  // This is a local variable
+    Brain.Screen.print("devices connected = %i", devs.number());
     Brain.Screen.newLine();
 
-    Brain.Screen.setCursor(BRAIN_ROW_COUNT, 1);
-    Brain.Screen.print("Press the (A) button or touch the screen to continue...");
-
     pause();
+    gRequestNewFrame = true;
 }
 
 void motorSettings ( void ) { }
 
 void thermalInfo ( void ) {
+    Brain.Screen.clearScreen(vex::color::black);
+    Brain.Screen.setCursor(1, 1);
+
+    vex::devices devs;  // This is a local variable
+    Brain.Screen.print("devices connected = %i", devs.number());
+    Brain.Screen.newLine();
+
+    for(int i=0; i<devs.number(); i++) {
+        Brain.Screen.print("\t device #%i = %i", devs.type(i));
+        Brain.Screen.newLine();
+    }
+
+    pause();
 }
 
 // Give user command line access to the sd card.
@@ -114,6 +133,14 @@ void sdReader ( void ) {
 }
 
 void visionViewer ( void ) {
+    bool exit = false;
+    while(!exit) {
+        // TODO: implement the vision sensor code here.
+        Brain.Screen.print("Press B to exit");
+        if (Controller.ButtonB.pressing()) {
+            exit = true;
+        }
+    }
 }
 
 void autoWriter ( void ) {
@@ -125,7 +152,8 @@ void drawGif( void ) {
     //      Brain.Screen.drawImageFromFile(str, xpos, ypos);
 }
 
-int gRowSize = 3;  // This is how many items can be in one row.
+int gRowSize = 8;  // This is how many items can be in one row.
+int gPositionOffsetY = 0;
 
 // The Button Item class contains the information for the each different screen item / action.
 // (i.e. test motors, system report, etc...)
@@ -136,6 +164,7 @@ public:
     int m_id;  // This is the position relative to the other objects (i.e. 0 is top, 1 is under it.)
     string m_title;  // The name of the Button.
     void (*m_funcPtr)();  // This is a pointer the button's function.
+    bool m_isActive = false;
 
     ButtonItem(string title, void (*funcPtr)()) {
         this->m_funcPtr = funcPtr;
@@ -149,16 +178,19 @@ public:
     void Draw(int xcursor, int ycursor) {
         // Find position based on index.
         int xloc = GetX()*GetItemSize() + (GetX()+1)*BRAIN_ITEM_PADDING;
-        int yloc = GetY()*GetItemSize() + (GetY()+1)*BRAIN_ITEM_PADDING;
+        int yloc = GetY()*GetItemSize() + (GetY()+1)*BRAIN_ITEM_PADDING + gPositionOffsetY;
         int size = GetItemSize();
 
         // Draw border rectangle at needed thickness & color, case: if selected.
+        // Also deterine if is activated.
         if (xcursor == GetX() && ycursor == GetY()) {
             Brain.Screen.setPenWidth(BOLD_PEN_WIDTH);
             Brain.Screen.drawRectangle(xloc, yloc,  size, size, vex::color::yellow);
             Brain.Screen.setPenWidth(STD_PEN_WIDTH);
+            m_isActive = true;
         } else {
             Brain.Screen.drawRectangle(xloc, yloc,  size, size, vex::color::black);
+            m_isActive = false;
         }
 
         // TODO: VERIFY THIS FACT: monospaced characters are 1/2 the width of the height of a char.
@@ -201,11 +233,12 @@ ButtonItem VisionViewer = ButtonItem("Vision Sensor Viewer", visionViewer);
 ButtonItem EditAutoCode = ButtonItem("Edit Autonomous Code", autoWriter);
 ButtonItem DrawGif = ButtonItem("Show Logo", drawGif);
 
+ButtonItem buttonItemArray[] = {SystemReport, MotorSettings, ThermalInformation, SDCardViewer, VisionViewer, EditAutoCode, DrawGif};
+
 // menu variables.
 int xindex = 0; int yindex = 0;  // This is the coords of the cursor.
-bool requestNewFrame = true;
 
-// This function has all the menu controll checking.
+// This function has all the menu control checking.
 bool upToggle;  bool downToggle;
 void menuControl( void ) {
     if (Controller.ButtonUp.pressing()) {
@@ -214,7 +247,7 @@ void menuControl( void ) {
             {  // Action when button is first pressed:
                 yindex--;
                 if (yindex < 0) {yindex = 0;}
-                requestNewFrame = true;
+                gRequestNewFrame = true;
             }
         }
     } else if(!Controller.ButtonUp.pressing() && upToggle) {
@@ -227,11 +260,17 @@ void menuControl( void ) {
             {  // Action when button is first pressed:
                 yindex++;
                 if (yindex > ButtonItem::getMaxYIndex()) {yindex = ButtonItem::getMaxYIndex();}
-                requestNewFrame = true;
+                gRequestNewFrame = true;
             }
         }
     } else if(!Controller.ButtonUp.pressing() && downToggle) {
         downToggle = false;
+    }
+
+    // Let the controller scroll the screen.
+    if (Controller.Axis2.value() != 0) {
+        gPositionOffsetY += std::floor(Controller.Axis2.value()/32);
+        gRequestNewFrame = true;
     }
 
 }
@@ -246,17 +285,31 @@ void menu ( void ) {
         menuControl();  // Check for movement.
 
         // Redraw the screen when the "cursor" is moved.
-        if (requestNewFrame) {
-            requestNewFrame = false;
+        if (gRequestNewFrame) {
+            gRequestNewFrame = false;
             Brain.Screen.clearScreen(vex::color::white);
-
+            /*
             SystemReport.Draw(xindex, yindex);
             MotorSettings.Draw(xindex, yindex);
             ThermalInformation.Draw(xindex, yindex);
             SDCardViewer.Draw(xindex, yindex);
             VisionViewer.Draw(xindex, yindex);
             EditAutoCode.Draw(xindex, yindex);
-            DrawGif.Draw(xindex, yindex);
+            DrawGif.Draw(xindex, yindex);*/
+
+            // Draw all the boxes.
+            for (ButtonItem bi : buttonItemArray) {
+                bi.Draw(xindex, yindex);
+            }
+        }
+
+        // If the 'A' button is pressed, call the assigned function to open a new window.
+        if (Controller.ButtonA.pressing()) {
+            for (ButtonItem bi : buttonItemArray) {
+                if (bi.m_isActive) {
+                    bi.m_funcPtr();  // call assigned function.
+                }
+            }
         }
 
         vex::task::sleep(STD_WAIT);
@@ -275,6 +328,10 @@ int main() {
     initialize();  // Check the status of the brain and connections.
     menu();  // Enter menu after status check;
 
-    while(true) { vex::task::sleep(STD_WAIT*5); }
+    Brain.Screen.clearScreen(vex::color::black);
+    Brain.Screen.setCursor(1, 1);
 
+    Brain.Screen.print("program excecution completed.");
+
+    pause();
 }
